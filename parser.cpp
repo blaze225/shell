@@ -47,3 +47,21 @@ void createCommandTable(vector <int> pipePos, string argString){
 		}
 	}	
 }
+
+vector <string> tokenize(string cmd){
+	char *ptok,temp_cmd[100];
+	vector <string> tokens;
+	strcpy(temp_cmd,cmd.c_str());
+	ptok = strtok(temp_cmd, " -");
+
+	while(ptok!=NULL){
+		tokens.push_back(ptok);
+		ptok=strtok(NULL," ");
+	}
+
+	// cout<<"Tokens are:";
+	// for(size_t i=0;i<tokens.size();i++)
+	// 	cout<<tokens[i]<<endl;
+
+	return tokens;
+}
