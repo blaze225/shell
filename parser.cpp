@@ -29,17 +29,21 @@ vector <int> getPipePosition(string argString)
 }
 
 void createCommandTable(vector <int> pipePos, string argString){
-	cout<<"Tokens:\n";
 	int pos=0;
-	for(size_t i=0;i<=(pipePos.size());i++){
-		if(argString[pos]== ' ')			// check for spaces
-				pos++;
-		if(i <= pipePos.size()-1)	
-			command_table.push_back(argString.substr(pos,pipePos[i] - pos));
-		else									
-			command_table.push_back(argString.substr(pos));		// last token
-		pos = pipePos[i]+1;
-
-	//	cout<<"Added new token:"<<command_table.size();
+	if(pipePos.size()==0){				// No pipes
+		command_table.push_back(argString);
 	}
+	else{
+		for(size_t i=0;i<=(pipePos.size());i++){
+			if(argString[pos]== ' ')			// check for spaces
+					pos++;
+			if(i <= pipePos.size()-1)	
+				command_table.push_back(argString.substr(pos,pipePos[i] - pos));
+			else									
+				command_table.push_back(argString.substr(pos));		// last token
+			pos = pipePos[i]+1;
+
+		//	cout<<"Added new token:"<<command_table.size();
+		}
+	}	
 }
