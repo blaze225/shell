@@ -61,29 +61,17 @@ void echo(string to_print){
 
 // FOR NON SHELL
 void executeCommand(string cmd){
-	vector<string> args = tokenize(cmd);
+	char ** args = tokenize(cmd);
 	int cstatus; /* Exit status of child. */
 	pid_t c, child;
-
-	// Converting vector of string to char**
-    char ** arr = new char*[args.size()];
-	for(size_t i = 0; i < args.size(); i++){
-    	arr[i] = new char[args[i].size() + 1];
-    	strcpy(arr[i], args[i].c_str());
-	}
-	// Making last element NULL for execvp()
-	arr[args.size()]=NULL;
 
 	// cout<<"AGRs:";
 	// for(size_t j=0;j<args.size();j++)
 	// 	cout<<arr[j]<<endl;
 
-	
-
-
 	if((child=fork())==0){		// CHILD
 	//	cout<<"Child: PID of Child ="<<(long) getpid()<<endl;
-		execvp(arr[0], arr); /* arg[0] has the command name. */
+		execvp(args[0], args); /* arg[0] has the command name. */
 		/* If the child process reaches this point, then */
 		/* execvp must have failed. */
 		cout<<"Child process could not do execvp.\n";
@@ -98,5 +86,43 @@ void executeCommand(string cmd){
 		cout<<"-------------Parent: Child"<<(long)c<<" exited with status ="<<cstatus<<endl;
 		}
 	}
+
+}
+
+void processPipes(string cmd1, string cmd2){
+	int pfds[2];
+	pid_t pid1,pid2,c1,c2;
+	int status1,status2;
+	pipe(pfds);
+	char ** args1 = tokenize(cmd1);
+	char ** args2 = tokenize(cmd2);
+
+	pid1 = fork();
+	if(pid1==0){
+		dup2(pfds[1], STDOUT_FILENO);
+      	close(pfds[0]);
+      	execvp(args1[0], args1);
+
+      	cout<<"1st Child process could not do execvp.\n";
+		
+		exit(1);
+	}
+
+	pid2 = fork();
+	if(pid2==0){
+		dup2(pfds[0], STDIN_FILENO);
+      	close(pfds[1]);
+      	execvp(args2[0],args2);
+      	cout<<"2nd Child process could not do execvp.\n";
+      	exit(1);
+	}
+
+	close(pfds[0]);
+   	close(pfds[1]);
+   	c1=waitpid(pid1,&status1,WUNTRACED);
+   	cout<<"-------------Pid1: Child"<<c1<<" exited with status ="<<status1<<endl;
+   	c2=waitpid(pid2,&status2,WUNTRACED);
+   	cout<<"-------------Pid2: Child"<<c2<<" exited with status ="<<status2<<endl;
+
 
 }

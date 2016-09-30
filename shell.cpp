@@ -31,8 +31,8 @@ int main()
 		if(command_table.size()==1){			// Single command
 			
 			// Removing leading spaces
-			command_table[0] = command_table[0].substr(command_table[0].find_first_not_of(" \t"));
-			//cout<<"command_table="<<command_table[0]<<endl;
+			command_table[0] = removeLeadingSpaces(command_table[0]);
+			
 			if(command_table[0].find("cd")== 0)
 			{	
 				changeDirectory(command_table[0]);
@@ -46,6 +46,13 @@ int main()
 			else{
 				executeCommand(command_table[0]);
 			}
+		}
+		else{									// Pipes present
+			
+			for(size_t i=0;i<command_table.size();i++)
+				command_table[i]=removeLeadingSpaces(command_table[i]);
+			
+			processPipes(command_table[0],command_table[1]);
 		}
 
 

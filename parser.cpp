@@ -48,7 +48,7 @@ void createCommandTable(vector <int> pipePos, string argString){
 	}	
 }
 
-vector <string> tokenize(string cmd){
+char ** tokenize(string cmd){
 	char *ptok,temp_cmd[100];
 	vector <string> tokens;
 	strcpy(temp_cmd,cmd.c_str());
@@ -59,9 +59,22 @@ vector <string> tokenize(string cmd){
 		ptok=strtok(NULL," ");
 	}
 
+	// Converting vector of string to char**
+    char ** arr = new char*[tokens.size()];
+	for(size_t i = 0; i < tokens.size(); i++){
+    	arr[i] = new char[tokens[i].size() + 1];
+    	strcpy(arr[i], tokens[i].c_str());
+	}
+	// Making last element NULL for execvp()
+	arr[tokens.size()]=NULL;
+
 	// cout<<"Tokens are:";
 	// for(size_t i=0;i<tokens.size();i++)
 	// 	cout<<tokens[i]<<endl;
 
-	return tokens;
+	return arr;
+}
+
+string removeLeadingSpaces(string cmd){
+	return cmd.substr(cmd.find_first_not_of(" \t"));
 }
