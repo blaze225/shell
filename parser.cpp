@@ -58,9 +58,16 @@ char ** tokenize(string cmd){
 		tokens.push_back(ptok);
 		ptok=strtok(NULL," ");
 	}
+	// Removing quotes from arguments
+	for(size_t i=0;i<tokens.size();i++)
+		if((tokens[i][0] == '\"' && tokens[i][tokens[i].size()-1] == '\"')
+			|| (tokens[i][0] == '\'' && tokens[i][tokens[i].size()-1] == '\'')){
+			tokens[i].erase(0,1);
+			tokens[i].erase(tokens[i].size()-1);
+		}	
 
 	// Converting vector of string to char**
-    char ** arr = new char*[tokens.size()];
+    char ** arr = new char*[tokens.size()+1];	
 	for(size_t i = 0; i < tokens.size(); i++){
     	arr[i] = new char[tokens[i].size() + 1];
     	strcpy(arr[i], tokens[i].c_str());

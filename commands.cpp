@@ -4,15 +4,18 @@
 void changeDirectory(string cdCommand){
 	string newdir,path;
 	int whitespace_pos;
-	newdir = cdCommand.substr(cdCommand.find("cd")+2);
+	cdCommand = removeLeadingSpaces(cdCommand);
+	newdir = cdCommand.substr(2);
 	//cout<<"New Dir:"<<newdir<<endl;
 	
-	if(newdir.empty() || newdir==" ~" || newdir==" ``")
-		newdir="/home/";
+	if(newdir.empty() || newdir==" ~" || newdir==" ``")		// only cd, cd ~, cd ``
+		newdir=getenv("HOME");								
 	else{
-		
+
 		whitespace_pos = newdir.find_first_not_of(" \t");
-		if(whitespace_pos==0){							// Invalid cd
+		if(whitespace_pos==-1)			// only cd with spaces
+			newdir=getenv("HOME");
+		else if(whitespace_pos==0){							// Invalid cd
 			cout<<newdir<<": command not found\n";
 			return;
 		}
@@ -74,6 +77,7 @@ void executeCommand(string cmd){
 		execvp(args[0], args); /* arg[0] has the command name. */
 		/* If the child process reaches this point, then */
 		/* execvp must have failed. */
+		cout<<cmd<<": command not found\n";
 		cout<<"Child process could not do execvp.\n";
 		exit(1);
 	}
@@ -89,15 +93,19 @@ void executeCommand(string cmd){
 
 }
 
-void processPipes(string cmd1, string cmd2){
+void processPipes(){
 	int pfds[2];
 	pid_t pid1,pid2,c1,c2;
 	int status1,status2;
 	pipe(pfds);
-	char ** args1 = tokenize(cmd1);
-	char ** args2 = tokenize(cmd2);
+	char ** args1 = tokenize(command_table[0]);
+	char ** args2 = tokenize(command_table[1]);
 
 	pid1 = fork();
+	if(pid1==-1)
+	{	perror("fork");
+		exit(1);
+	}	
 	if(pid1==0){
 		dup2(pfds[1], STDOUT_FILENO);
       	close(pfds[0]);
@@ -109,6 +117,10 @@ void processPipes(string cmd1, string cmd2){
 	}
 
 	pid2 = fork();
+	if(pid2==-1)
+	{	perror("fork");	
+		exit(1);
+	}	
 	if(pid2==0){
 		dup2(pfds[0], STDIN_FILENO);
       	close(pfds[1]);
@@ -125,4 +137,39 @@ void processPipes(string cmd1, string cmd2){
    	cout<<"-------------Pid2: Child"<<c2<<" exited with status ="<<status2<<endl;
 
 
+}
+
+void processMultiPipes(){
+	int pfds[2];
+	pid_t pid;
+	int fd_in=0, status,c;
+	size_t i=0;
+	char ** args;
+	while(i < command_table.size()){
+		args = tokenize(command_table[i]);
+		//cout<<"# Forking for "<<args[0]<<" #\n";
+		pipe(pfds);
+		pid = fork();
+		if(pid== -1){
+			perror("fork");
+			exit(1);
+		}
+		else if (pid==0){			
+			dup2(fd_in,STDIN_FILENO);
+			if(i!=command_table.size()-1)		// If not the last command
+				dup2(pfds[1],STDOUT_FILENO);
+			close(pfds[0]);
+			execvp(args[0],args);
+			perror("execvp");
+			exit(1);
+		}
+		else{		
+
+			c = waitpid(pid,&status,WUNTRACED);
+			cout<<"-------------Pid: Child"<<c<<" exited with status ="<<status<<endl;
+			close(pfds[1]);
+			fd_in = pfds[0];
+			i++;
+		}
+	}
 }

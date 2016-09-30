@@ -5,7 +5,8 @@
 #include <unistd.h> 			// For chdir(), getcwd() , execvp(), pipe()
 #include <stdlib.h>
 #include <sys/wait.h>			// for wait()
-#include  <sys/types.h>			// for
+#include  <sys/types.h>			
+#include <stdio.h>				// for perror()
 
 using namespace std;
 
@@ -17,7 +18,8 @@ void echo(string to_print);
 void executeCommand(string cmd);
 char ** tokenize(string cmd);
 string removeLeadingSpaces(string cmd);
-void processPipes(string cmd1, string cmd2);
+void processPipes();
+void processMultiPipes();
 
 extern vector< string > command_table; 
 extern string cwd;

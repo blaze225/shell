@@ -52,7 +52,7 @@ int main()
 			for(size_t i=0;i<command_table.size();i++)
 				command_table[i]=removeLeadingSpaces(command_table[i]);
 			
-			processPipes(command_table[0],command_table[1]);
+			processMultiPipes();
 		}
 
 
