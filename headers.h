@@ -20,6 +20,8 @@ char ** tokenize(string cmd);
 string removeLeadingSpaces(string cmd);
 void processPipes();
 void processMultiPipes();
+string removeQuotes(string argument);
+vector <string> tokenizeForBuiltins(string cmd);
 
 extern vector< string > command_table; 
 extern string cwd;

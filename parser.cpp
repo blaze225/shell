@@ -85,3 +85,35 @@ char ** tokenize(string cmd){
 string removeLeadingSpaces(string cmd){
 	return cmd.substr(cmd.find_first_not_of(" \t"));
 }
+string removeQuotes(string argument){
+	if(argument.find("\"")!=string::npos){							// Double quotes
+		argument = argument.substr(argument.find_first_of("\"")+1);
+		argument = argument.substr(0,argument.find_last_of("\""));	
+	}	
+	if(argument.find("\'")!=string::npos){							// Single quotes
+		argument = argument.substr(argument.find_first_of("\'")+1);	
+		argument = argument.substr(0,argument.find_last_of("\'"));	
+	}
+	return argument;
+}
+
+vector <string> tokenizeForBuiltins(string cmd){
+	char *ptok,temp_cmd[100];
+	vector <string> tokens;
+	strcpy(temp_cmd,cmd.c_str());
+	ptok = strtok(temp_cmd, " ");
+
+	while(ptok!=NULL){
+		tokens.push_back(ptok);
+		ptok=strtok(NULL," ");
+	}
+	// Removing quotes from arguments
+	for(size_t i=0;i<tokens.size();i++)
+		if((tokens[i][0] == '\"' && tokens[i][tokens[i].size()-1] == '\"')
+			|| (tokens[i][0] == '\'' && tokens[i][tokens[i].size()-1] == '\'')){
+			tokens[i].erase(0,1);
+			tokens[i].erase(tokens[i].size()-1);
+		}	
+
+	return tokens;	
+}

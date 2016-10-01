@@ -49,17 +49,26 @@ string getCurrentDirectory(){
 }
 // ECHO
 void echo(string to_print){
+	string environ;
+	vector <string> tokens;
 	to_print = to_print.substr(to_print.find("echo")+4);
-	to_print = to_print.substr(to_print.find_first_not_of(" \t"));	// Removing extra whitespaces
-	if(to_print.find("\"")!=string::npos){							// Double quotes
-		to_print = to_print.substr(to_print.find_first_of("\"")+1);
-		to_print = to_print.substr(0,to_print.find_last_of("\""));	
+	
+	tokens = tokenizeForBuiltins(to_print);
+	
+	for(size_t i=0;i<tokens.size();i++){
+		to_print = tokens[i].substr(tokens[i].find_first_not_of(" \t"));	// Removing extra whitespaces
+		to_print = removeQuotes(to_print);				// Removing quotes if they exist
+		if(to_print.find("$")!=string::npos){				// Environment variables 
+			environ = to_print.substr(to_print.find("$")+1);
+			to_print = (string) getenv(environ.c_str());
+			if(to_print.empty())
+			{	cout<<"Environment does not exist on the awesome shell!\n";
+				exit(1);
+			}	
+		}
+		cout<<to_print<<" ";
 	}	
-	if(to_print.find("\'")!=string::npos){							// Single quotes
-		to_print = to_print.substr(to_print.find_first_of("\'")+1);	
-		to_print = to_print.substr(0,to_print.find_last_of("\'"));	
-	}
-	cout<<to_print<<endl;
+	cout<<endl;
 }
 
 // FOR NON SHELL
@@ -147,7 +156,7 @@ void processMultiPipes(){
 	char ** args;
 	while(i < command_table.size()){
 		args = tokenize(command_table[i]);
-		//cout<<"# Forking for "<<args[0]<<" #\n";
+		cout<<"# Forking for "<<args[0]<<" #\n";
 		pipe(pfds);
 		pid = fork();
 		if(pid== -1){
@@ -159,7 +168,14 @@ void processMultiPipes(){
 			if(i!=command_table.size()-1)		// If not the last command
 				dup2(pfds[1],STDOUT_FILENO);
 			close(pfds[0]);
-			execvp(args[0],args);
+			if(command_table[i].find("cd")!=string::npos)	// cd in pipe
+				changeDirectory(command_table[i]);
+			else if(command_table[i].find("pwd")!=string::npos)		// pwd in pipe
+				cout<< getCurrentDirectory();
+			else if(command_table[i].find("echo")!=string::npos)	// echo in pipe
+				echo(command_table[i]);	
+			else									// other commands
+				execvp(args[0],args);
 			perror("execvp");
 			exit(1);
 		}
