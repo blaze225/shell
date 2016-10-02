@@ -1,5 +1,8 @@
 #include "headers.h"
 
+string history_path = getenv("HOME") ;	// Setting Path for history file
+
+
 // CD
 void changeDirectory(string cdCommand){
 	string newdir,path;
@@ -188,4 +191,51 @@ void processMultiPipes(){
 			i++;
 		}
 	}
+}
+
+void log_history(string cmd){
+	ofstream hfile(history_path.c_str(), fstream::app);	
+	if (hfile.is_open()){
+		command_history.push_back(cmd);
+		hfile << cmd <<"\n";
+		hfile.close();
+	}
+	else
+		cout << "Unable to open history file for logging\n";
+		
+}
+void get_history(){
+	size_t history_size;
+	int i=1, history_limit;
+	string line;
+	vector <string> history_args = tokenizeForBuiltins(command_table[0]);	// getting arguments if any
+
+	ifstream file(history_path.c_str());		
+	if (file.is_open()){						// Reading from history.txt and writing to vector command history
+		command_history.clear();	
+    	while ( getline(file,line) )
+			command_history.push_back(line);		
+
+     file.close();
+  	}
+	else 
+		cout << "Unable to open history file for reading\n";
+
+	history_size = command_history.size();
+	history_limit=history_size;
+	if(history_args.size() > 1){		// args present | Calculating history_limit
+		if(history_args.size() == 2)
+			history_limit = atoi(history_args[1].c_str());
+		
+		else{
+			cout<<"Extra arguments given!\n";
+			return;
+		}
+	}
+
+	for(size_t i= history_size - history_limit; i<history_size;i++){	//Display
+		cout<<i+1<<"\t"<<command_history[i]<<endl;	
+	}
+	
+
 }

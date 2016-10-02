@@ -7,6 +7,7 @@
 #include <sys/wait.h>			// for wait()
 #include  <sys/types.h>			
 #include <stdio.h>				// for perror()
+#include <fstream>				// open/close
 
 using namespace std;
 
@@ -22,6 +23,10 @@ void processPipes();
 void processMultiPipes();
 string removeQuotes(string argument);
 vector <string> tokenizeForBuiltins(string cmd);
+void log_history(string cmd);
+void get_history();
 
 extern vector< string > command_table; 
 extern string cwd;
+extern vector< string > command_history;
+extern string history_path;

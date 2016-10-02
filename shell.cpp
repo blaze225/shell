@@ -1,12 +1,15 @@
 #include "headers.h"
 
 vector< string > command_table; 
-string cwd="/home/saad/Desktop/OS Programs/Assignment3";
+vector< string > command_history; 
+string cwd= getCurrentDirectory();				// get getCurrentDirectory for prompt
+
 
 int main()
 {	string argString;
 	vector <int> pipePos;
 	string prompt;
+	history_path = history_path + "/Documents/history.txt";		// Setting path for history
 	cout << "\033[2J\033[1;1H";			// Clearing screen
 	while(1){
 		
@@ -22,9 +25,12 @@ int main()
 		}
 		
 		if(argString=="exit")			// Checking for exit
-		{	cout<<"Leaving? ... GET LOST\n";
+		{	
+			cout<<"Leaving? ... GET LOST\n";
 			break;
 		}
+
+		log_history(argString);					// Logging into history
 		pipePos = getPipePosition(argString);
 		createCommandTable(pipePos,argString);
 
@@ -42,7 +48,9 @@ int main()
 			}
 			else if(command_table[0].find("echo")== 0){
 				echo(command_table[0]);
-			}	
+			}
+			else if(command_table[0].find("history")== 0)
+				get_history();	
 			else{
 				executeCommand(command_table[0]);
 			}
