@@ -2,6 +2,40 @@
 
 string history_path = getenv("HOME") ;	// Setting Path for history file
 
+void executeCommandTable(){
+	if(command_table.size()==1){			// Single command
+			
+			// Removing leading spaces
+			command_table[0] = removeLeadingSpaces(command_table[0]);
+			
+			if(command_table[0].find("cd")== 0)
+			{	
+				changeDirectory(command_table[0]);
+			}
+			else if(command_table[0].find("pwd")== 0){
+				cout<<getCurrentDirectory()<<endl;
+			}
+			else if(command_table[0].find("echo")== 0){
+				echo(command_table[0]);
+			}
+			else if(command_table[0].find("history")== 0)
+				get_history();	
+			else if(command_table[0].find("!!")==0)
+				shebang(argString);
+			else if(command_table[0].find("export")== 0)
+				exportCommand(command_table[0]);
+			else{
+				executeCommand(command_table[0]);
+			}
+		}
+		else{									// Pipes present
+			
+			for(size_t i=0;i<command_table.size();i++)
+				command_table[i]=removeLeadingSpaces(command_table[i]);
+			
+			processMultiPipes();
+		}
+}
 
 // CD
 void changeDirectory(string cdCommand){
@@ -56,18 +90,29 @@ void echo(string to_print){
 	vector <string> tokens;
 	to_print = to_print.substr(to_print.find("echo")+4);
 	
-	tokens = tokenizeForBuiltins(to_print);
+	tokens = tokenizeForBuiltins(to_print," ");
 	
 	for(size_t i=0;i<tokens.size();i++){
 		to_print = tokens[i].substr(tokens[i].find_first_not_of(" \t"));	// Removing extra whitespaces
 		to_print = removeQuotes(to_print);				// Removing quotes if they exist
 		if(to_print.find("$")!=string::npos){				// Environment variables 
 			environ = to_print.substr(to_print.find("$")+1);
-			to_print = (string) getenv(environ.c_str());
-			if(to_print.empty())
-			{	cout<<"Environment does not exist on the awesome shell!\n";
-				exit(1);
+			//cout<<"ENV:"<<environ.c_str();
+			if(environ[0]=='$'){							// $$ case
+				cout<<getpid()<<" ";
+				if(environ.length()==1){
+					continue;
+				}
+				else
+					environ= environ.substr(1);
 			}	
+			if(getenv(environ.c_str())==NULL)
+			{	cout<<"Environment variable does not exist on the awesome shell!\n";
+				return;
+			}	
+			else{
+				to_print = getenv(environ.c_str());
+			}
 		}
 		cout<<to_print<<" ";
 	}	
@@ -99,55 +144,9 @@ void executeCommand(string cmd){
 		}
 		else {
 		c = wait(&cstatus); /* Wait for child to complete. */
-		cout<<"-------------Parent: Child"<<(long)c<<" exited with status ="<<cstatus<<endl;
+	//	cout<<"-------------Parent: Child"<<(long)c<<" exited with status ="<<cstatus<<endl;
 		}
 	}
-
-}
-
-void processPipes(){
-	int pfds[2];
-	pid_t pid1,pid2,c1,c2;
-	int status1,status2;
-	pipe(pfds);
-	char ** args1 = tokenize(command_table[0]);
-	char ** args2 = tokenize(command_table[1]);
-
-	pid1 = fork();
-	if(pid1==-1)
-	{	perror("fork");
-		exit(1);
-	}	
-	if(pid1==0){
-		dup2(pfds[1], STDOUT_FILENO);
-      	close(pfds[0]);
-      	execvp(args1[0], args1);
-
-      	cout<<"1st Child process could not do execvp.\n";
-		
-		exit(1);
-	}
-
-	pid2 = fork();
-	if(pid2==-1)
-	{	perror("fork");	
-		exit(1);
-	}	
-	if(pid2==0){
-		dup2(pfds[0], STDIN_FILENO);
-      	close(pfds[1]);
-      	execvp(args2[0],args2);
-      	cout<<"2nd Child process could not do execvp.\n";
-      	exit(1);
-	}
-
-	close(pfds[0]);
-   	close(pfds[1]);
-   	c1=waitpid(pid1,&status1,WUNTRACED);
-   	cout<<"-------------Pid1: Child"<<c1<<" exited with status ="<<status1<<endl;
-   	c2=waitpid(pid2,&status2,WUNTRACED);
-   	cout<<"-------------Pid2: Child"<<c2<<" exited with status ="<<status2<<endl;
-
 
 }
 
@@ -159,7 +158,7 @@ void processMultiPipes(){
 	char ** args;
 	while(i < command_table.size()){
 		args = tokenize(command_table[i]);
-		cout<<"# Forking for "<<args[0]<<" #\n";
+	//	cout<<"# Forking for "<<args[0]<<" #\n";
 		pipe(pfds);
 		pid = fork();
 		if(pid== -1){
@@ -185,7 +184,7 @@ void processMultiPipes(){
 		else{		
 
 			c = waitpid(pid,&status,WUNTRACED);
-			cout<<"-------------Pid: Child"<<c<<" exited with status ="<<status<<endl;
+			//cout<<"-------------Pid: Child"<<c<<" exited with status ="<<status<<endl;
 			close(pfds[1]);
 			fd_in = pfds[0];
 			i++;
@@ -194,9 +193,11 @@ void processMultiPipes(){
 }
 
 void log_history(string cmd){
+
 	ofstream hfile(history_path.c_str(), fstream::app);	
 	if (hfile.is_open()){
-		command_history.push_back(cmd);
+		if(command_history[command_history.size()-1] != cmd)		// If last command is not same
+			command_history.push_back(cmd);
 		hfile << cmd <<"\n";
 		hfile.close();
 	}
@@ -207,20 +208,9 @@ void log_history(string cmd){
 void get_history(){
 	size_t history_size;
 	int i=1, history_limit;
-	string line;
-	vector <string> history_args = tokenizeForBuiltins(command_table[0]);	// getting arguments if any
-
-	ifstream file(history_path.c_str());		
-	if (file.is_open()){						// Reading from history.txt and writing to vector command history
-		command_history.clear();	
-    	while ( getline(file,line) )
-			command_history.push_back(line);		
-
-     file.close();
-  	}
-	else 
-		cout << "Unable to open history file for reading\n";
-
+	
+	vector <string> history_args = tokenizeForBuiltins(command_table[0]," ");	// getting arguments if any
+	
 	history_size = command_history.size();
 	history_limit=history_size;
 	if(history_args.size() > 1){		// args present | Calculating history_limit
@@ -236,6 +226,41 @@ void get_history(){
 	for(size_t i= history_size - history_limit; i<history_size;i++){	//Display
 		cout<<i+1<<"\t"<<command_history[i]<<endl;	
 	}
-	
+}
+void loadHistory(){						// Reading from history.txt and writing to vector command history
+	string line;
+	int f1= creat(history_path.c_str(),0777);
+	ofstream hfile(history_path.c_str(), fstream::app);	
+	if (hfile.is_open()){
+		
+		hfile << "cmd\n";
+		hfile.close();
+	}
+	ifstream file(history_path.c_str());		
+	if (file.is_open()){						
+		command_history.clear();	
+    	while ( getline(file,line) )
+			command_history.push_back(line);		
 
+     file.close();
+  	}
+	else 
+		cout << "Unable to open history file for reading\n";
+
+}
+
+void shebang(string argstring){
+	string last_cmd = command_history[command_history.size()-2];
+	command_table.clear();
+	command_table.push_back(last_cmd);
+	executeCommandTable();
+}
+
+void exportCommand(string cmd){
+	vector <string> tokens;
+	cmd = cmd.substr(cmd.find("export")+6);
+	tokens = tokenizeForBuiltins(cmd,"=");
+//	cout<<"TOKENs for export:"<<tokens[0]<<" "<<tokens[1]<<endl;
+	setenv(tokens[0].c_str(), tokens[1].c_str(), 1);
+	//cout<<"VALUE OF:"<<tokens[0]<<"is "<<getenv(tokens[0].c_str());
 }

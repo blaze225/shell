@@ -9,7 +9,6 @@ vector <int> getPipePosition(string argString)
 	singleQuotes=0;
 	doubleQuotes=0;
 	for( i=0;argString[i]!='\0';i++){
-			//cout<<"Current charcter:"<<argString[i]<<endl;
 		if(argString[i]=='\'' && argString[i-1]!='\\')
 			singleQuotes++;
 		if(argString[i]=='\"' && argString[i-1]!='\\')
@@ -21,10 +20,6 @@ vector <int> getPipePosition(string argString)
 			}	
 		}
 	}	
-	// cout<<"Pipe positions:";
-	// for(size_t j=0;j<pipePos.size();j++)
-	// 	cout<<pipePos[j]<<" ";
-	// cout<<endl;
 	return pipePos;
 }
 
@@ -97,15 +92,15 @@ string removeQuotes(string argument){
 	return argument;
 }
 
-vector <string> tokenizeForBuiltins(string cmd){
+vector <string> tokenizeForBuiltins(string cmd, string delim){
 	char *ptok,temp_cmd[100];
 	vector <string> tokens;
 	strcpy(temp_cmd,cmd.c_str());
-	ptok = strtok(temp_cmd, " ");
+	ptok = strtok(temp_cmd, delim.c_str());
 
 	while(ptok!=NULL){
 		tokens.push_back(ptok);
-		ptok=strtok(NULL," ");
+		ptok=strtok(NULL,delim.c_str());
 	}
 	// Removing quotes from arguments
 	for(size_t i=0;i<tokens.size();i++)
