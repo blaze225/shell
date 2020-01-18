@@ -1,5 +1,5 @@
-#shell
-FUNCTIONALITY IMPLEMENTED
+# Shell
+## FUNCTIONALITY IMPLEMENTED
 
 1. Shell builtins : cd,pwd,echo(ENV variables included),export
 2. Execution of all other commands using execvp
